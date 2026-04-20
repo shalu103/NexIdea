@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>MindVault — Your Personal Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #080b0f;
+    --bg2: #0d1117;
+    --bg3: #131920;
+    --border: #1e2730;
+    --border2: #243040;
+    --accent: #4ecca3;
+    --accent2: #f7c59f;
+    --accent3: #c77dff;
+    --text: #dde4ee;
+    --text2: #7a8899;
+    --text3: #4a5568;
+    --danger: #ff6b6b;
+    --gold: #e8c97e;
+    --radius: 14px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lora', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    background: radial-gradient(ellipse at 30% 40%, #0d1f2d 0%, #080b0f 70%);
+  }
+  .auth-box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(78,204,163,0.08);
+    animation: fadeUp 0.6s ease;
+  }
+  .auth-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .auth-tagline {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+  .auth-tabs { display: flex; gap: 0; margin-bottom: 28px; border-bottom: 1px solid var(--border); }
+  .auth-tab {
+    flex: 1; background: none; border: none; color: var(--text3);
+    padding: 10px 0; font-family: 'DM Mono', monospace; font-size: 12px;
+    cursor: pointer; letter-spacing: 0.08em; border-bottom: 2px solid transparent;
+    transition: all 0.2s; margin-bottom: -1px;
+  }
+  .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .field-group { margin-bottom: 16px; }
+  .field-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+  .field-input {
+    width: 100%; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 10px;
+    padding: 12px 16px; color: var(--text); font-family: 'Lora', serif; font-size: 14px;
+    outline: none; transition: border 0.2s;
+  }
+  .field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(78,204,163,0.1); }
+  .btn-primary {
+    width: 100%; background: var(--accent); color: #080b0f;
+    border: none; border-radius: 10px; padding: 14px;
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+    letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s; margin-top: 8px;
+  }
+  .btn-primary:hover { background: #62e8b8; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(78,204,163,0.3); }
+  .auth-error { color: var(--danger); font-family: 'DM Mono', monospace; font-size: 11px; margin-top: 10px; text-align: center; }
+  .auth-users-hint { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .auth-users-hint-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+  .user-pill {
+    display: inline-block; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 12px; font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--text2); cursor: pointer; margin: 3px 3px 0 0;
+    transition: all 0.15s;
+  }
+  .user-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── MAIN APP ── */
+  #app { display: none; min-height: 100vh; }
+  #app.visible { display: flex; flex-direction: column; }
+
+  /* ── TOP NAV ── */
+  .topnav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(8,11,15,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  .nav-logo { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--accent); font-weight: 700; }
+  .nav-user {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2);
+  }
+  .nav-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #080b0f; font-family: 'DM Mono', monospace;
+  }
+  .nav-logout {
+    background: none; border: 1px solid var(--border2); border-radius: 8px;
+    padding: 5px 12px; color: var(--text3); font-family: 'DM Mono', monospace;
+    font-size: 11px; cursor: pointer; transition: all 0.2s;
+  }
+  .nav-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── TAB BAR ── */
+  .tabbar {
+    display: flex; background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 0 20px; overflow-x: auto; scrollbar-width: none;
+  }
+  .tabbar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex-shrink: 0; background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 14px 20px; color: var(--text3); font-family: 'DM Mono', monospace;
+    font-size: 12px; letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 7px; margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text2); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-icon { font-size: 14px; }
+  .tab-count {
+    background: var(--accent); color: #080b0f; border-radius: 10px;
+    padding: 1px 6px; font-size: 9px; font-weight: 500;
+  }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; padding: 28px 20px; max-width: 760px; margin: 0 auto; width: 100%; }
+  .tab-panel { display: none; animation: fadeUp 0.3s ease; }
+  .tab-panel.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px; margin-bottom: 20px;
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(78,204,163,0.3), transparent);
+  }
+  .card-title {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before { content: ''; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
+
+  /* ── FORM ELEMENTS ── */
+  .form-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .form-group { flex: 1; min-width: 160px; }
+  .form-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; display: block; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 11px 14px; color: var(--text);
+    font-family: 'Lora', serif; font-size: 14px; outline: none; transition: border 0.2s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(78,204,163,0.08);
+  }
+  .form-textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+  .form-select { cursor: pointer; }
+  .btn-add {
+    background: var(--accent); color: #080b0f; border: none; border-radius: 10px;
+    padding: 11px 24px; font-family: 'DM Mono', monospace; font-size: 12px;
+    font-weight: 500; letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-add:hover { background: #62e8b8; transform: translateY(-1px); }
+  .btn-add:active { transform: translateY(0); }
+
+  /* ── VOICE RECORDER ── */
+  .voice-section {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 14px;
+  }
+  .voice-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px; }
+  .voice-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .btn-record {
+    display: flex; align-items: center; gap: 8px;
+    background: none; border: 1.5px solid var(--border2);
+    border-radius: 50px; padding: 9px 18px;
+    color: var(--text2); font-family: 'DM Mono', monospace; font-size: 12px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-record:hover { border-color: var(--accent3); color: var(--accent3); }
+  .btn-record.recording {
+    border-color: var(--danger); color: var(--danger);
+    animation: pulse-border 1.2s ease-in-out infinite;
+  }
+  .record-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+  .record-dot.idle { background: var(--accent3); }
+  .record-timer { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2); min-width: 48px; }
+  .voice-entries { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .voice-entry {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .voice-entry audio { flex: 1; height: 30px; }
+  .voice-duration { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); }
+  .voice-delete { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; transition: color 0.2s; }
+  .voice-delete:hover { color: var(--danger); }
+
+  /* ── ENTRY CARDS ── */
+  .entries-section { margin-top: 8px; }
+  .section-divider {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3);
+    letter-spacing: 0.12em; text-transform: uppercase; margin: 20px 0 12px;
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .entry {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 10px;
+    transition: border-color 0.2s, transform 0.15s;
+    animation: fadeUp 0.25s ease;
+  }
+  .entry:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .entry-header { display: flex; align-items: flex-start; gap: 12px; }
+  .entry-check {
+    width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border2);
+    background: none; cursor: pointer; flex-shrink: 0; margin-top: 3px;
+    transition: all 0.2s; appearance: none; -webkit-appearance: none;
+  }
+  .entry-check:checked {
+    background: var(--accent); border-color: var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 12 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 5l3.5 3.5L11 1' stroke='%23080b0f' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-size: 65%; background-repeat: no-repeat; background-position: center;
+  }
+  .entry-body { flex: 1; }
+  .entry-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.4; }
+  .entry-title.done { text-decoration: line-through; color: var(--text3); }
+  .entry-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 8px; }
+  .entry-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tag {
+    display: inline-flex; align-items: center;
+    border-radius: 6px; padding: 2px 9px;
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  .tag-routine-morning  { background: rgba(232,201,126,0.12); color: var(--gold); border: 1px solid rgba(232,201,126,0.25); }
+  .tag-routine-work     { background: rgba(78,204,163,0.12);  color: var(--accent);  border: 1px solid rgba(78,204,163,0.25); }
+  .tag-routine-evening  { background: rgba(199,125,255,0.12); color: var(--accent3); border: 1px solid rgba(199,125,255,0.25); }
+  .tag-routine-health   { background: rgba(247,197,159,0.12); color: var(--accent2); border: 1px solid rgba(247,197,159,0.25); }
+  .tag-routine-other    { background: rgba(122,136,153,0.12); color: var(--text2);   border: 1px solid rgba(122,136,153,0.25); }
+  .tag-idea             { background: rgba(232,201,126,0.12); color: var(--gold); border: 1px solid rgba(232,201,126,0.25); }
+  .tag-goal-ns          { background: rgba(122,136,153,0.12); color: var(--text2);   border: 1px solid rgba(122,136,153,0.25); }
+  .tag-goal-ip          { background: rgba(78,204,163,0.12);  color: var(--accent);  border: 1px solid rgba(78,204,163,0.25); }
+  .tag-goal-done        { background: rgba(78,204,163,0.2);   color: #2ecc71;        border: 1px solid rgba(46,204,113,0.3); }
+  .tag-goal-paused      { background: rgba(247,197,159,0.12); color: var(--accent2); border: 1px solid rgba(247,197,159,0.25); }
+  .entry-date { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); }
+  .entry-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-icon {
+    background: none; border: none; color: var(--text3); cursor: pointer;
+    font-size: 14px; padding: 5px 7px; border-radius: 6px; transition: all 0.15s;
+  }
+  .btn-icon:hover { background: var(--bg3); color: var(--text); }
+  .btn-icon.del:hover { color: var(--danger); }
+  .expand-btn {
+    background: none; border: none; color: var(--text3); font-family: 'DM Mono', monospace;
+    font-size: 10px; cursor: pointer; padding: 4px 0; letter-spacing: 0.06em; margin-top: 4px;
+    transition: color 0.2s;
+  }
+  .expand-btn:hover { color: var(--accent); }
+  .entry-expanded { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text2); line-height: 1.7; }
+
+  /* ── STATUS SELECT ── */
+  .status-select {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    padding: 3px 8px; font-family: 'DM Mono', monospace; font-size: 10px;
+    cursor: pointer; outline: none; transition: all 0.2s;
+  }
+  .status-ns    { color: var(--text2);   border-color: rgba(122,136,153,0.4); }
+  .status-ip    { color: var(--accent);  border-color: rgba(78,204,163,0.4); }
+  .status-done  { color: #2ecc71;        border-color: rgba(46,204,113,0.4); }
+  .status-pause { color: var(--accent2); border-color: rgba(247,197,159,0.4); }
+
+  /* ── DEADLINE ── */
+  .deadline-badge {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .deadline-ok      { color: var(--text3); }
+  .deadline-soon    { color: var(--accent2); }
+  .deadline-overdue { color: var(--danger); }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    text-align: center; padding: 48px 20px;
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3);
+    letter-spacing: 0.06em;
+  }
+  .empty-icon { font-size: 36px; display: block; margin-bottom: 12px; opacity: 0.3; }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .stat-card {
+    flex: 1; min-width: 100px; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; text-align: center;
+  }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--accent); }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text3); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 3px; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap { margin-top: 6px; }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3)); border-radius: 3px; transition: width 0.4s ease; }
+
+  /* ── MOBILE BOTTOM NAV ── */
+  .mobile-nav {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(13,17,23,0.97); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    z-index: 50;
+  }
+  .mobile-nav-inner { display: flex; justify-content: space-around; }
+  .mobile-tab {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; color: var(--text3); cursor: pointer;
+    padding: 6px 16px; border-radius: 10px; transition: all 0.2s;
+    font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.06em;
+  }
+  .mobile-tab.active { color: var(--accent); }
+  .mobile-tab-icon { font-size: 18px; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0.3); }
+    50%       { box-shadow: 0 0 0 6px rgba(255,107,107,0); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .topnav { padding: 0 16px; }
+    .tabbar { display: none; }
+    .mobile-nav { display: block; }
+    .content { padding: 20px 14px 90px; }
+    .form-row { gap: 8px; }
+    .auth-box { padding: 32px 24px; margin: 16px; }
+    .stats-bar { gap: 8px; }
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--bg2); border: 1px solid var(--accent); color: var(--accent);
+    padding: 10px 22px; border-radius: 50px; font-family: 'DM Mono', monospace;
+    font-size: 12px; letter-spacing: 0.06em; z-index: 999;
+    opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  audio::-webkit-media-controls-panel { background: var(--bg3); }
+  audio { border-radius: 8px; width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- ── AUTH SCREEN ── -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">MindVault</div>
+    <div class="auth-tagline">Your personal command center</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+
+    <div id="login-form">
+      <div class="field-group">
+        <div class="field-label">Username</div>
+        <input class="field-input" id="login-user" placeholder="Enter your username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Password</div>
+        <input class="field-input" type="password" id="login-pass" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Sign In</button>
+      <div class="auth-error" id="login-error"></div>
+    </div>
+
+    <div id="register-form" style="display:none">
+      <div class="field-group">
+        <div class="field-label">Full Name</div>
+        <input class="field-input" id="reg-name" placeholder="Your display name"/>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Username</div>
+        <input class="field-input" id="reg-user" placeholder="Choose a username" autocomplete="username"/>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Password</div>
+        <input class="field-input" type="password" id="reg-pass" placeholder="Choose a password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/>
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Create Account</button>
+      <div class="auth-error" id="reg-error"></div>
+    </div>
+
+    <div class="auth-users-hint" id="existing-users-section" style="display:none">
+      <div class="auth-users-hint-label">Quick Access</div>
+      <div id="existing-users-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── MAIN APP ── -->
+<div id="app">
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="nav-logo">MindVault</div>
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">?</div>
+      <span id="nav-username" style="font-size:13px;color:var(--text2)"></span>
+      <button class="nav-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- TAB BAR (desktop) -->
+  <div class="tabbar">
+    <button class="tab-btn active" onclick="switchTab('routine',this)">
+      <span class="tab-icon">📋</span> Daily Routine
+      <span class="tab-count" id="routine-count" style="display:none"></span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('ideas',this)">
+      <span class="tab-icon">💡</span> Draft Ideas
+    </button>
+    <button class="tab-btn" onclick="switchTab('goals',this)">
+      <span class="tab-icon">🎯</span> Goals
+    </button>
+    <button class="tab-btn" onclick="switchTab('overview',this)">
+      <span class="tab-icon">✦</span> Overview
+    </button>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ──── ROUTINE TAB ──── -->
+    <div class="tab-panel active" id="tab-routine">
+      <div class="card">
+        <div class="card-title">Add Routine Entry</div>
+
+        <!-- Voice -->
+        <div class="voice-section">
+          <div class="voice-label">🎙 Voice Note</div>
+          <div class="voice-controls">
+            <button class="btn-record" id="rec-btn-r" onclick="toggleRecord('routine')">
+              <span class="record-dot idle" id="rec-dot-r"></span>
+              <span id="rec-label-r">Record Voice</span>
+            </button>
+            <span class="record-timer" id="rec-timer-r">0:00</span>
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">or type below</span>
+          </div>
+          <div class="voice-entries" id="voice-entries-r"></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Task / Activity</label>
+            <input class="form-input" id="r-text" placeholder="What did you do or plan to do?" onkeydown="if(event.key==='Enter')addRoutine()"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time</label>
+            <input type="time" class="form-input" id="r-time"/>
+          </div>
+        </div>
+        <div class="form-row" style="align-items:flex-end">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="r-cat">
+              <option>Morning</option><option>Work</option>
+              <option>Evening</option><option>Health</option><option>Other</option>
+            </select>
+          </div>
+          <button class="btn-add" onclick="addRoutine()">+ Add Entry</button>
+        </div>
+      </div>
+
+      <div class="entries-section" id="routine-list"></div>
+    </div>
+
+    <!-- ──── IDEAS TAB ──── -->
+    <div class="tab-panel" id="tab-ideas">
+      <div class="card">
+        <div class="card-title">Capture an Idea</div>
+
+        <div class="voice-section">
+          <div class="voice-label">🎙 Voice Note</div>
+          <div class="voice-controls">
+            <button class="btn-record" id="rec-btn-i" onclick="toggleRecord('ideas')">
+              <span class="record-dot idle" id="rec-dot-i"></span>
+              <span id="rec-label-i">Record Voice</span>
+            </button>
+            <span class="record-timer" id="rec-timer-i">0:00</span>
+          </div>
+          <div class="voice-entries" id="voice-entries-i"></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Idea Title</label>
+            <input class="form-input" id="i-title" placeholder="Your idea headline..."/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tag</label>
+            <input class="form-input" id="i-tag" placeholder="e.g. Business"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">Details / Notes</label>
+          <textarea class="form-textarea" id="i-body" placeholder="Expand on your idea... what problem does it solve? what's exciting about it?"></textarea>
+        </div>
+        <button class="btn-add" onclick="addIdea()">+ Save Idea</button>
+      </div>
+
+      <div class="entries-section" id="ideas-list"></div>
+    </div>
+
+    <!-- ──── GOALS TAB ──── -->
+    <div class="tab-panel" id="tab-goals">
+      <div class="card">
+        <div class="card-title">Set a New Goal</div>
+
+        <div class="voice-section">
+          <div class="voice-label">🎙 Voice Note</div>
+          <div class="voice-controls">
+            <button class="btn-record" id="rec-btn-g" onclick="toggleRecord('goals')">
+              <span class="record-dot idle" id="rec-dot-g"></span>
+              <span id="rec-label-g">Record Voice</span>
+            </button>
+            <span class="record-timer" id="rec-timer-g">0:00</span>
+          </div>
+          <div class="voice-entries" id="voice-entries-g"></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Goal Title</label>
+            <input class="form-input" id="g-title" placeholder="What do you want to achieve?"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Deadline</label>
+            <input type="date" class="form-input" id="g-deadline"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">Why this goal? (Your motivation)</label>
+          <textarea class="form-textarea" id="g-desc" placeholder="Describe why this matters, what success looks like, and your plan..." style="min-height:70px"></textarea>
+        </div>
+        <div class="form-row" style="align-items:flex-end">
+          <div class="form-group">
+            <label class="form-label">Initial Status</label>
+            <select class="form-select" id="g-status">
+              <option>Not Started</option><option>In Progress</option>
+              <option>Completed</option><option>Paused</option>
+            </select>
+          </div>
+          <button class="btn-add" onclick="addGoal()">+ Add Goal</button>
+        </div>
+      </div>
+
+      <div class="entries-section" id="goals-list"></div>
+    </div>
+
+    <!-- ──── OVERVIEW TAB ──── -->
+    <div class="tab-panel" id="tab-overview">
+      <div class="stats-bar" id="stats-bar"></div>
+      <div id="overview-content"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-inner">
+      <button class="mobile-tab active" id="mob-routine" onclick="switchTab('routine',this,true)">
+        <span class="mobile-tab-icon">📋</span>Routine
+      </button>
+      <button class="mobile-tab" id="mob-ideas" onclick="switchTab('ideas',this,true)">
+        <span class="mobile-tab-icon">💡</span>Ideas
+      </button>
+      <button class="mobile-tab" id="mob-goals" onclick="switchTab('goals',this,true)">
+        <span class="mobile-tab-icon">🎯</span>Goals
+      </button>
+      <button class="mobile-tab" id="mob-overview" onclick="switchTab('overview',this,true)">
+        <span class="mobile-tab-icon">✦</span>Overview
+      </button>
+    </div>
+  </nav>
+</div><!-- /app -->
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STATE & STORAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const DB_KEY = 'mindvault_db';
+let currentUser = null;
+
+function loadDB() {
+  try { return JSON.parse(localStorage.getItem(DB_KEY)) || { users: {}, data: {} }; }
+  catch { return { users: {}, data: {} }; }
+}
+function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+function getUserData() {
+  const db = loadDB();
+  if (!db.data[currentUser]) db.data[currentUser] = { routines: [], ideas: [], goals: [] };
+  return db.data[currentUser];
+}
+function saveUserData(d) {
+  const db = loadDB();
+  db.data[currentUser] = d;
+  saveDB(db);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AUTH
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function switchAuthTab(tab) {
+  document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? '' : 'none';
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0 && tab==='login') || (i===1 && tab==='register')));
+}
+
+function loadExistingUsers() {
+  const db = loadDB();
+  const users = Object.keys(db.users);
+  const sec = document.getElementById('existing-users-section');
+  const list = document.getElementById('existing-users-list');
+  if (users.length === 0) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  list.innerHTML = users.map(u => `<span class="user-pill" onclick="quickLogin('${u}')">${db.users[u].name || u}</span>`).join('');
+}
+
+function quickLogin(username) {
+  document.getElementById('login-user').value = username;
+  document.getElementById('login-pass').focus();
+  switchAuthTab('login');
+}
+
+function doLogin() {
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  const db = loadDB();
+  if (!user || !pass) { err.textContent = 'Please enter username and password.'; return; }
+  if (!db.users[user]) { err.textContent = 'Account not found. Please register.'; return; }
+  if (db.users[user].password !== btoa(pass)) { err.textContent = 'Incorrect password.'; return; }
+  err.textContent = '';
+  startSession(user, db.users[user].name);
+}
+
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const user = document.getElementById('reg-user').value.trim().toLowerCase();
+  const pass = document.getElementById('reg-pass').value;
+  const err = document.getElementById('reg-error');
+  if (!name || !user || !pass) { err.textContent = 'All fields are required.'; return; }
+  if (user.length < 3) { err.textContent = 'Username must be at least 3 characters.'; return; }
+  if (pass.length < 4) { err.textContent = 'Password must be at least 4 characters.'; return; }
+  const db = loadDB();
+  if (db.users[user]) { err.textContent = 'Username already taken.'; return; }
+  db.users[user] = { name, password: btoa(pass), created: new Date().toISOString() };
+  saveDB(db);
+  err.textContent = '';
+  startSession(user, name);
+}
+
+function startSession(username, name) {
+  currentUser = username;
+  sessionStorage.setItem('mv_session', username);
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('nav-username').textContent = name || username;
+  document.getElementById('nav-avatar').textContent = (name || username)[0].toUpperCase();
+  renderAll();
+  showToast(`Welcome back, ${name || username}!`);
+}
+
+function doLogout() {
+  currentUser = null;
+  sessionStorage.removeItem('mv_session');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('auth-screen').style.display = 'flex';
+  loadExistingUsers();
+  document.getElementById('login-pass').value = '';
+  stopAllRecordings();
+}
+
+// Auto-login from session
+(function() {
+  loadExistingUsers();
+  const saved = sessionStorage.getItem('mv_session');
+  if (saved) {
+    const db = loadDB();
+    if (db.users[saved]) startSession(saved, db.users[saved].name);
+  }
+})();
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TABS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let currentTab = 'routine';
+function switchTab(name, btn, isMobile) {
+  currentTab = name;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (!isMobile) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // sync mobile
+    document.querySelectorAll('.mobile-tab').forEach(b => b.classList.remove('active'));
+    const mob = document.getElementById('mob-' + name);
+    if (mob) mob.classList.add('active');
+  } else {
+    document.querySelectorAll('.mobile-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    const desk = document.querySelector(`.tab-btn[onclick*="'${name}'"]`);
+    if (desk) desk.classList.add('active');
+  }
+  if (name === 'overview') renderOverview();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// VOICE RECORDER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const recState = { routine: null, ideas: null, goals: null };
+const recTimers = {};
+const recChunks = {};
+const pendingVoice = { routine: [], ideas: [], goals: [] };
+
+async function toggleRecord(section) {
+  if (recState[section]) {
+    stopRecord(section); return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mr = new MediaRecorder(stream);
+    recChunks[section] = [];
+    mr.ondataavailable = e => recChunks[section].push(e.data);
+    mr.onstop = () => {
+      const blob = new Blob(recChunks[section], { type: 'audio/webm' });
+      const url = URL.createObjectURL(blob);
+      const dur = recTimerVal[section] || 0;
+      pendingVoice[section].push({ url, dur });
+      renderPendingVoice(section);
+      stream.getTracks().forEach(t => t.stop());
+    };
+    mr.start();
+    recState[section] = mr;
+    startTimer(section);
+    const btn = document.getElementById('rec-btn-' + section[0]);
+    const dot = document.getElementById('rec-dot-' + section[0]);
+    const lbl = document.getElementById('rec-label-' + section[0]);
+    btn.classList.add('recording'); dot.classList.remove('idle');
+    lbl.textContent = 'Stop Recording';
+  } catch(e) {
+    showToast('Microphone access denied');
+  }
+}
+
+const recTimerVal = {};
+function startTimer(section) {
+  recTimerVal[section] = 0;
+  const el = document.getElementById('rec-timer-' + section[0]);
+  recTimers[section] = setInterval(() => {
+    recTimerVal[section]++;
+    const m = Math.floor(recTimerVal[section]/60);
+    const s = recTimerVal[section] % 60;
+    el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }, 1000);
+}
+
+function stopRecord(section) {
+  if (recState[section]) {
+    recState[section].stop();
+    recState[section] = null;
+  }
+  clearInterval(recTimers[section]);
+  const key = section[0];
+  document.getElementById('rec-btn-' + key).classList.remove('recording');
+  document.getElementById('rec-dot-' + key).classList.add('idle');
+  document.getElementById('rec-label-' + key).textContent = 'Record Voice';
+  document.getElementById('rec-timer-' + key).textContent = '0:00';
+}
+
+function stopAllRecordings() {
+  ['routine','ideas','goals'].forEach(s => { if (recState[s]) stopRecord(s); });
+}
+
+function renderPendingVoice(section) {
+  const key = section[0];
+  const container = document.getElementById('voice-entries-' + key);
+  container.innerHTML = pendingVoice[section].map((v,i) => `
+    <div class="voice-entry">
+      <audio controls src="${v.url}"></audio>
+      <span class="voice-duration">${formatDur(v.dur)}</span>
+      <button class="voice-delete" onclick="removePendingVoice('${section}',${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removePendingVoice(section, idx) {
+  pendingVoice[section].splice(idx,1);
+  renderPendingVoice(section);
+}
+
+function formatDur(s) {
+  const m = Math.floor(s/60), sec = s%60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ROUTINE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function addRoutine() {
+  const text = document.getElementById('r-text').value.trim();
+  if (!text && pendingVoice.routine.length === 0) { showToast('Please enter a task or record a voice note'); return; }
+  const d = getUserData();
+  d.routines.unshift({
+    id: Date.now(), text: text || '🎙 Voice note',
+    category: document.getElementById('r-cat').value,
+    time: document.getElementById('r-time').value,
+    date: new Date().toISOString(), done: false,
+    voices: pendingVoice.routine.map(v => ({ url: v.url, dur: v.dur }))
+  });
+  saveUserData(d);
+  document.getElementById('r-text').value = '';
+  document.getElementById('r-time').value = '';
+  pendingVoice.routine = [];
+  renderPendingVoice('routine');
+  renderRoutine();
+  updateRoutineCount();
+  showToast('Routine entry added!');
+}
+
+function toggleRoutine(id) {
+  const d = getUserData();
+  const r = d.routines.find(x => x.id === id);
+  if (r) r.done = !r.done;
+  saveUserData(d); renderRoutine(); updateRoutineCount();
+}
+
+function deleteEntry(type, id) {
+  const d = getUserData();
+  d[type] = d[type].filter(x => x.id !== id);
+  saveUserData(d); renderAll();
+}
+
+function updateRoutineCount() {
+  const d = getUserData();
+  const today = d.routines.filter(r => isToday(r.date));
+  const pending = today.filter(r => !r.done).length;
+  const cnt = document.getElementById('routine-count');
+  if (pending > 0) { cnt.style.display = ''; cnt.textContent = pending; }
+  else cnt.style.display = 'none';
+}
+
+function renderRoutine() {
+  const d = getUserData();
+  const container = document.getElementById('routine-list');
+  if (d.routines.length === 0) {
+    container.innerHTML = `<div class="empty"><span class="empty-icon">📋</span>No routine entries yet.<br>Start logging your day above.</div>`;
+    return;
+  }
+  const todayItems = d.routines.filter(r => isToday(r.date));
+  const olderItems = d.routines.filter(r => !isToday(r.date));
+  let html = '';
+  if (todayItems.length > 0) {
+    const done = todayItems.filter(r=>r.done).length;
+    html += `<div class="section-divider">Today · ${done}/${todayItems.length} done</div>`;
+    html += todayItems.map(r => routineCard(r)).join('');
+  }
+  if (olderItems.length > 0) {
+    html += `<div class="section-divider" style="margin-top:24px">Previous Entries</div>`;
+    html += olderItems.map(r => routineCard(r, true)).join('');
+  }
+  container.innerHTML = html;
+}
+
+function routineCard(r, faded) {
+  const catClass = 'tag-routine-' + r.category.toLowerCase();
+  const voiceHTML = (r.voices||[]).map(v => `
+    <div class="voice-entry" style="margin-top:8px;padding:6px 10px">
+      <audio controls src="${v.url}"></audio>
+      <span class="voice-duration">${formatDur(v.dur)}</span>
+    </div>`).join('');
+  return `
+    <div class="entry" style="${faded?'opacity:0.7':''}">
+      <div class="entry-header">
+        <input type="checkbox" class="entry-check" ${r.done?'checked':''} onchange="toggleRoutine(${r.id})"/>
+        <div class="entry-body">
+          <div class="entry-title ${r.done?'done':''}">${esc(r.text)}</div>
+          <div class="entry-meta">
+            <span class="tag ${catClass}">${r.category}</span>
+            ${r.time ? `<span class="entry-date">${r.time}</span>` : ''}
+            <span class="entry-date">${fmtDate(r.date)}</span>
+          </div>
+          ${voiceHTML}
+        </div>
+        <div class="entry-actions">
+          <button class="btn-icon del" onclick="deleteEntry('routines',${r.id})">🗑</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// IDEAS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function addIdea() {
+  const title = document.getElementById('i-title').value.trim();
+  if (!title && pendingVoice.ideas.length === 0) { showToast('Please enter an idea title or record a voice note'); return; }
+  const d = getUserData();
+  d.ideas.unshift({
+    id: Date.now(), title: title || '🎙 Voice idea',
+    body: document.getElementById('i-body').value.trim(),
+    tag: document.getElementById('i-tag').value.trim() || 'General',
+    date: new Date().toISOString(),
+    voices: pendingVoice.ideas.map(v => ({ url: v.url, dur: v.dur }))
+  });
+  saveUserData(d);
+  document.getElementById('i-title').value = '';
+  document.getElementById('i-body').value = '';
+  document.getElementById('i-tag').value = '';
+  pendingVoice.ideas = [];
+  renderPendingVoice('ideas');
+  renderIdeas();
+  showToast('Idea saved!');
+}
+
+function renderIdeas() {
+  const d = getUserData();
+  const c = document.getElementById('ideas-list');
+  if (d.ideas.length === 0) {
+    c.innerHTML = `<div class="empty"><span class="empty-icon">💡</span>No ideas yet.<br>Every big thing starts as a draft.</div>`; return;
+  }
+  c.innerHTML = d.ideas.map(idea => `
+    <div class="entry" id="idea-${idea.id}">
+      <div class="entry-header">
+        <div class="entry-body">
+          <div class="entry-title">${esc(idea.title)}</div>
+          <div class="entry-meta">
+            <span class="tag tag-idea">${esc(idea.tag)}</span>
+            <span class="entry-date">${fmtDate(idea.date)}</span>
+          </div>
+          ${idea.body || (idea.voices||[]).length > 0 ? `<button class="expand-btn" onclick="toggleExpand('idea-${idea.id}')">▼ view details</button>` : ''}
+          <div class="entry-expanded" style="display:none" id="exp-idea-${idea.id}">
+            ${idea.body ? `<p>${esc(idea.body)}</p>` : ''}
+            ${(idea.voices||[]).map(v => `<div class="voice-entry" style="margin-top:8px;padding:6px 10px"><audio controls src="${v.url}"></audio><span class="voice-duration">${formatDur(v.dur)}</span></div>`).join('')}
+          </div>
+        </div>
+        <div class="entry-actions">
+          <button class="btn-icon del" onclick="deleteEntry('ideas',${idea.id})">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// GOALS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function addGoal() {
+  const title = document.getElementById('g-title').value.trim();
+  if (!title && pendingVoice.goals.length === 0) { showToast('Please enter a goal title or record a voice note'); return; }
+  const d = getUserData();
+  d.goals.unshift({
+    id: Date.now(), title: title || '🎙 Voice goal',
+    desc: document.getElementById('g-desc').value.trim(),
+    deadline: document.getElementById('g-deadline').value,
+    status: document.getElementById('g-status').value,
+    date: new Date().toISOString(),
+    voices: pendingVoice.goals.map(v => ({ url: v.url, dur: v.dur }))
+  });
+  saveUserData(d);
+  document.getElementById('g-title').value = '';
+  document.getElementById('g-desc').value = '';
+  document.getElementById('g-deadline').value = '';
+  document.getElementById('g-status').value = 'Not Started';
+  pendingVoice.goals = [];
+  renderPendingVoice('goals');
+  renderGoals();
+  showToast('Goal added!');
+}
+
+function updateGoalStatus(id, status) {
+  const d = getUserData();
+  const g = d.goals.find(x => x.id === id);
+  if (g) g.status = status;
+  saveUserData(d); renderGoals();
+}
+
+const statusClass = { 'Not Started':'ns','In Progress':'ip','Completed':'done','Paused':'pause' };
+const tagClass    = { 'Not Started':'tag-goal-ns','In Progress':'tag-goal-ip','Completed':'tag-goal-done','Paused':'tag-goal-paused' };
+
+function renderGoals() {
+  const d = getUserData();
+  const c = document.getElementById('goals-list');
+  if (d.goals.length === 0) {
+    c.innerHTML = `<div class="empty"><span class="empty-icon">🎯</span>No goals yet.<br>What do you want to achieve?</div>`; return;
+  }
+  c.innerHTML = d.goals.map(g => {
+    const dl = deadlineHTML(g.deadline);
+    const voiceHTML = (g.voices||[]).map(v => `<div class="voice-entry" style="margin-top:8px;padding:6px 10px"><audio controls src="${v.url}"></audio><span class="voice-duration">${formatDur(v.dur)}</span></div>`).join('');
+    return `
+    <div class="entry" id="goal-${g.id}">
+      <div class="entry-header">
+        <div class="entry-body">
+          <div class="entry-title">${esc(g.title)}</div>
+          <div class="entry-meta">
+            <select class="status-select status-${statusClass[g.status]||'ns'}" onchange="updateGoalStatus(${g.id},this.value)">
+              <option ${g.status==='Not Started'?'selected':''}>Not Started</option>
+              <option ${g.status==='In Progress'?'selected':''}>In Progress</option>
+              <option ${g.status==='Completed'?'selected':''}>Completed</option>
+              <option ${g.status==='Paused'?'selected':''}>Paused</option>
+            </select>
+            ${dl}
+            <span class="entry-date">Added ${fmtDate(g.date)}</span>
+          </div>
+          ${g.desc || (g.voices||[]).length > 0 ? `<button class="expand-btn" onclick="toggleExpand('goal-${g.id}')">▼ view details</button>` : ''}
+          <div class="entry-expanded" style="display:none" id="exp-goal-${g.id}">
+            ${g.desc ? `<p style="margin-bottom:8px">${esc(g.desc)}</p>` : ''}
+            ${voiceHTML}
+          </div>
+        </div>
+        <div class="entry-actions">
+          <button class="btn-icon del" onclick="deleteEntry('goals',${g.id})">🗑</button>
+        </div>
+      </div>
+    </div>`; }).join('');
+}
+
+function deadlineHTML(dl) {
+  if (!dl) return '';
+  const diff = Math.ceil((new Date(dl) - new Date()) / 86400000);
+  let cls = 'deadline-ok', label = '';
+  if (diff < 0) { cls = 'deadline-overdue'; label = `Overdue by ${Math.abs(diff)}d`; }
+  else if (diff <= 7) { cls = 'deadline-soon'; label = diff === 0 ? 'Due today!' : `${diff}d left`; }
+  else { label = new Date(dl).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+  return `<span class="deadline-badge ${cls}">🗓 ${label}</span>`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// OVERVIEW
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderOverview() {
+  const d = getUserData();
+  const todayR = d.routines.filter(r => isToday(r.date));
+  const doneR  = todayR.filter(r => r.done).length;
+  const goals  = d.goals;
+  const ip     = goals.filter(g => g.status === 'In Progress').length;
+  const done   = goals.filter(g => g.status === 'Completed').length;
+  const pct    = goals.length > 0 ? Math.round(done/goals.length*100) : 0;
+
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${d.routines.length}</div><div class="stat-label">Total Routines</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--gold)">${d.ideas.length}</div><div class="stat-label">Draft Ideas</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--accent3)">${goals.length}</div><div class="stat-label">Goals Set</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#2ecc71">${done}</div><div class="stat-label">Goals Done</div></div>
+  `;
+
+  document.getElementById('overview-content').innerHTML = `
+    <div class="card">
+      <div class="card-title">Today's Routine</div>
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);margin-bottom:10px">${doneR} of ${todayR.length} tasks completed</div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" style="width:${todayR.length>0?Math.round(doneR/todayR.length*100):0}%"></div></div>
+      </div>
+      ${todayR.length === 0 ? '<div style="color:var(--text3);font-family:\'DM Mono\',monospace;font-size:12px;margin-top:12px">No routine entries for today.</div>' : ''}
+    </div>
+    <div class="card">
+      <div class="card-title">Goals Progress</div>
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);margin-bottom:10px">${pct}% goals completed · ${ip} in progress</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Recent Ideas</div>
+      ${d.ideas.length === 0
+        ? '<div style="color:var(--text3);font-family:\'DM Mono\',monospace;font-size:12px">No ideas captured yet.</div>'
+        : d.ideas.slice(0,5).map(i => `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <span class="tag tag-idea">${esc(i.tag)}</span>
+            <span style="font-size:14px;flex:1">${esc(i.title)}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">${fmtDate(i.date)}</span>
+          </div>`).join('')
+      }
+    </div>
+    <div class="card">
+      <div class="card-title">Active Goals</div>
+      ${goals.filter(g=>g.status==='In Progress').length === 0
+        ? '<div style="color:var(--text3);font-family:\'DM Mono\',monospace;font-size:12px">No goals in progress.</div>'
+        : goals.filter(g=>g.status==='In Progress').map(g => `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <span class="tag tag-goal-ip">In Progress</span>
+            <span style="font-size:14px;flex:1">${esc(g.title)}</span>
+            ${deadlineHTML(g.deadline)}
+          </div>`).join('')
+      }
+    </div>
+  `;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// HELPERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderAll() { renderRoutine(); renderIdeas(); renderGoals(); updateRoutineCount(); }
+function isToday(iso) { return new Date(iso).toDateString() === new Date().toDateString(); }
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} · ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+function toggleExpand(prefix) {
+  const card = document.getElementById(prefix);
+  const exp  = document.getElementById('exp-' + prefix);
+  const btn  = card.querySelector('.expand-btn');
+  if (!exp) return;
+  const hidden = exp.style.display === 'none';
+  exp.style.display = hidden ? 'block' : 'none';
+  btn.textContent = hidden ? '▲ hide details' : '▼ view details';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+</script>
+</body>
+</html>
