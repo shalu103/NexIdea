@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="description" content="MindVault — Your personal command center for daily routines, ideas & goals"/>
+  <meta name="theme-color" content="#080b0f"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="MindVault"/>
+  <title>MindVault — Personal Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     SPLASH / LOADING SCREEN
+═══════════════════════════════════════ -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-logo">MindVault</div>
+    <div class="splash-bar"><div class="splash-fill"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     AUTH SCREEN
+═══════════════════════════════════════ -->
+<div id="auth-screen" class="hidden">
+  <div class="auth-glow"></div>
+  <div class="auth-box">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <span class="logo-mark">⟡</span> MindVault
+      </div>
+      <div class="auth-tagline">Your personal command center</div>
+    </div>
+
+    <div class="auth-tabs" role="tablist">
+      <button class="auth-tab active" id="tab-login-btn" role="tab" onclick="App.Auth.switchTab('login')">Sign In</button>
+      <button class="auth-tab" id="tab-reg-btn" role="tab" onclick="App.Auth.switchTab('register')">Create Account</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-panel" class="auth-panel active">
+      <div class="field-group">
+        <label class="field-label" for="login-user">Username</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input class="field-input" id="login-user" type="text" placeholder="Enter your username" autocomplete="username"/>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="login-pass">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input class="field-input" id="login-pass" type="password" placeholder="Enter your password" autocomplete="current-password"/>
+          <button class="toggle-pass" onclick="App.Auth.togglePass('login-pass',this)" title="Show/hide password">👁</button>
+        </div>
+      </div>
+      <button class="btn-primary" id="login-btn" onclick="App.Auth.login()">
+        <span>Sign In</span>
+      </button>
+      <div class="auth-msg" id="login-msg"></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="reg-panel" class="auth-panel">
+      <div class="field-group">
+        <label class="field-label" for="reg-name">Full Name</label>
+        <div class="input-wrap">
+          <span class="input-icon">✨</span>
+          <input class="field-input" id="reg-name" type="text" placeholder="Your display name"/>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="reg-user">Username</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input class="field-input" id="reg-user" type="text" placeholder="Choose a username (min 3 chars)" autocomplete="username"/>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="reg-pass">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input class="field-input" id="reg-pass" type="password" placeholder="Choose a password (min 4 chars)" autocomplete="new-password"/>
+          <button class="toggle-pass" onclick="App.Auth.togglePass('reg-pass',this)" title="Show/hide password">👁</button>
+        </div>
+      </div>
+      <button class="btn-primary" id="reg-btn" onclick="App.Auth.register()">
+        <span>Create Account</span>
+      </button>
+      <div class="auth-msg" id="reg-msg"></div>
+    </div>
+
+    <!-- EXISTING USERS -->
+    <div class="quick-access" id="quick-access">
+      <div class="quick-label">Quick Access</div>
+      <div id="quick-users"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MAIN APPLICATION
+═══════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+  <!-- TOP NAV -->
+  <header class="topnav" id="topnav">
+    <div class="nav-left">
+      <button class="nav-menu-btn" id="sidebar-toggle" onclick="App.UI.toggleSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-logo"><span class="logo-mark">⟡</span> MindVault</div>
+    </div>
+    <div class="nav-center">
+      <div class="nav-search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="nav-search" id="global-search" placeholder="Search everything..." oninput="App.Search.query(this.value)"/>
+        <button class="search-clear hidden" id="search-clear" onclick="App.Search.clear()">✕</button>
+      </div>
+    </div>
+    <div class="nav-right">
+      <button class="theme-toggle" onclick="App.UI.toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
+      <div class="nav-avatar" id="nav-avatar">?</div>
+      <div class="nav-user-info">
+        <span class="nav-username" id="nav-username"></span>
+        <button class="btn-logout" onclick="App.Auth.logout()">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sb-avatar">?</div>
+      <div>
+        <div class="sidebar-name" id="sb-name"></div>
+        <div class="sidebar-sub">Personal Space</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="sb-item active" data-tab="routine" onclick="App.UI.switchTab('routine')">
+        <span class="sb-icon">📋</span>
+        <span>Daily Routine</span>
+        <span class="sb-badge" id="sb-routine-badge"></span>
+      </button>
+      <button class="sb-item" data-tab="ideas" onclick="App.UI.switchTab('ideas')">
+        <span class="sb-icon">💡</span>
+        <span>Draft Ideas</span>
+        <span class="sb-badge" id="sb-ideas-badge"></span>
+      </button>
+      <button class="sb-item" data-tab="goals" onclick="App.UI.switchTab('goals')">
+        <span class="sb-icon">🎯</span>
+        <span>Goals</span>
+        <span class="sb-badge" id="sb-goals-badge"></span>
+      </button>
+      <button class="sb-item" data-tab="overview" onclick="App.UI.switchTab('overview')">
+        <span class="sb-icon">✦</span>
+        <span>Overview</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sb-footer-btn" onclick="App.Data.exportAll()">⬇ Export Data</button>
+      <button class="sb-footer-btn danger" onclick="App.Data.clearConfirm()">🗑 Clear All</button>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="App.UI.toggleSidebar()"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="main-content">
+
+    <!-- SEARCH RESULTS OVERLAY -->
+    <div class="search-results hidden" id="search-results">
+      <div class="search-results-header">
+        <span id="search-results-label">Search Results</span>
+        <button onclick="App.Search.clear()">✕ Close</button>
+      </div>
+      <div id="search-results-body"></div>
+    </div>
+
+    <!-- ── ROUTINE TAB ── -->
+    <section class="tab-panel active" id="tab-routine" role="tabpanel">
+      <div class="panel-header">
+        <div>
+          <h1 class="panel-title">Daily Routine</h1>
+          <p class="panel-sub" id="routine-date-label"></p>
+        </div>
+        <div class="panel-actions">
+          <select class="filter-select" id="routine-filter" onchange="App.Routine.render()">
+            <option value="all">All Time</option>
+            <option value="today" selected>Today</option>
+            <option value="week">This Week</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ADD FORM -->
+      <div class="card form-card" id="routine-form-card">
+        <div class="card-title-bar">
+          <span class="card-title-text">➕ New Entry</span>
+          <button class="card-collapse" onclick="App.UI.toggleCard('routine-form-card')" title="Collapse">−</button>
+        </div>
+        <div class="card-body">
+          <div class="voice-recorder" id="voice-r">
+            <div class="voice-top">
+              <span class="voice-label-text">🎙 Voice Note</span>
+              <div class="voice-controls">
+                <button class="btn-record" id="rec-btn-r" onclick="App.Voice.toggle('r')">
+                  <span class="rec-dot" id="rec-dot-r"></span>
+                  <span id="rec-lbl-r">Start Recording</span>
+                </button>
+                <span class="rec-timer" id="rec-timer-r">0:00</span>
+              </div>
+            </div>
+            <div class="pending-voices" id="pv-r"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col flex-2">
+              <label class="form-label" for="r-text">Task / Activity</label>
+              <input class="form-input" id="r-text" type="text" placeholder="What did you do or plan to do?"/>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="r-time">Time</label>
+              <input class="form-input" id="r-time" type="time"/>
+            </div>
+          </div>
+          <div class="form-row form-row-bottom">
+            <div class="form-col">
+              <label class="form-label" for="r-cat">Category</label>
+              <select class="form-select" id="r-cat">
+                <option value="Morning">🌅 Morning</option>
+                <option value="Work">💼 Work</option>
+                <option value="Evening">🌆 Evening</option>
+                <option value="Health">💪 Health</option>
+                <option value="Learning">📚 Learning</option>
+                <option value="Personal">🏠 Personal</option>
+                <option value="Other">📌 Other</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="r-priority">Priority</label>
+              <select class="form-select" id="r-priority">
+                <option value="normal">Normal</option>
+                <option value="high">🔴 High</option>
+                <option value="low">🔵 Low</option>
+              </select>
+            </div>
+            <button class="btn-add" onclick="App.Routine.add()">+ Add Entry</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div class="progress-card" id="routine-progress-card">
+        <div class="progress-info">
+          <span class="progress-label">Today's Progress</span>
+          <span class="progress-pct" id="routine-pct">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="routine-bar"></div></div>
+        <div class="progress-stats" id="routine-stats"></div>
+      </div>
+
+      <div class="entries-list" id="routine-list"></div>
+    </section>
+
+    <!-- ── IDEAS TAB ── -->
+    <section class="tab-panel hidden" id="tab-ideas" role="tabpanel">
+      <div class="panel-header">
+        <div>
+          <h1 class="panel-title">Draft Ideas</h1>
+          <p class="panel-sub">Capture thoughts before they vanish</p>
+        </div>
+        <div class="panel-actions">
+          <select class="filter-select" id="ideas-filter" onchange="App.Ideas.render()">
+            <option value="all">All Ideas</option>
+            <option value="recent">Recent (7d)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card form-card" id="ideas-form-card">
+        <div class="card-title-bar">
+          <span class="card-title-text">➕ New Idea</span>
+          <button class="card-collapse" onclick="App.UI.toggleCard('ideas-form-card')" title="Collapse">−</button>
+        </div>
+        <div class="card-body">
+          <div class="voice-recorder" id="voice-i">
+            <div class="voice-top">
+              <span class="voice-label-text">🎙 Voice Note</span>
+              <div class="voice-controls">
+                <button class="btn-record" id="rec-btn-i" onclick="App.Voice.toggle('i')">
+                  <span class="rec-dot" id="rec-dot-i"></span>
+                  <span id="rec-lbl-i">Start Recording</span>
+                </button>
+                <span class="rec-timer" id="rec-timer-i">0:00</span>
+              </div>
+            </div>
+            <div class="pending-voices" id="pv-i"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-col flex-2">
+              <label class="form-label" for="i-title">Idea Title</label>
+              <input class="form-input" id="i-title" type="text" placeholder="Your idea headline..."/>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="i-tag">Tag</label>
+              <input class="form-input" id="i-tag" type="text" placeholder="e.g. Business" list="tags-datalist"/>
+              <datalist id="tags-datalist"></datalist>
+            </div>
+          </div>
+          <div class="form-col" style="margin-bottom:14px">
+            <label class="form-label" for="i-body">Details / Notes</label>
+            <textarea class="form-textarea" id="i-body" placeholder="Expand on your idea... what problem does it solve?"></textarea>
+          </div>
+          <div class="form-row form-row-bottom">
+            <div class="form-col">
+              <label class="form-label" for="i-status">Status</label>
+              <select class="form-select" id="i-status">
+                <option value="Draft">📝 Draft</option>
+                <option value="Exploring">🔍 Exploring</option>
+                <option value="Planned">📅 Planned</option>
+                <option value="Archived">📦 Archived</option>
+              </select>
+            </div>
+            <button class="btn-add" onclick="App.Ideas.add()">+ Save Idea</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- IDEAS GRID -->
+      <div class="ideas-grid" id="ideas-list"></div>
+    </section>
+
+    <!-- ── GOALS TAB ── -->
+    <section class="tab-panel hidden" id="tab-goals" role="tabpanel">
+      <div class="panel-header">
+        <div>
+          <h1 class="panel-title">Goals</h1>
+          <p class="panel-sub">Where do you want to be?</p>
+        </div>
+        <div class="panel-actions">
+          <select class="filter-select" id="goals-filter" onchange="App.Goals.render()">
+            <option value="all">All Goals</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card form-card" id="goals-form-card">
+        <div class="card-title-bar">
+          <span class="card-title-text">➕ New Goal</span>
+          <button class="card-collapse" onclick="App.UI.toggleCard('goals-form-card')" title="Collapse">−</button>
+        </div>
+        <div class="card-body">
+          <div class="voice-recorder" id="voice-g">
+            <div class="voice-top">
+              <span class="voice-label-text">🎙 Voice Note</span>
+              <div class="voice-controls">
+                <button class="btn-record" id="rec-btn-g" onclick="App.Voice.toggle('g')">
+                  <span class="rec-dot" id="rec-dot-g"></span>
+                  <span id="rec-lbl-g">Start Recording</span>
+                </button>
+                <span class="rec-timer" id="rec-timer-g">0:00</span>
+              </div>
+            </div>
+            <div class="pending-voices" id="pv-g"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-col flex-2">
+              <label class="form-label" for="g-title">Goal Title</label>
+              <input class="form-input" id="g-title" type="text" placeholder="What do you want to achieve?"/>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="g-deadline">Deadline</label>
+              <input class="form-input" id="g-deadline" type="date"/>
+            </div>
+          </div>
+          <div class="form-col" style="margin-bottom:14px">
+            <label class="form-label" for="g-desc">Why this goal? (Motivation)</label>
+            <textarea class="form-textarea" id="g-desc" placeholder="Describe why it matters and your plan..." style="min-height:72px"></textarea>
+          </div>
+          <div class="form-row form-row-bottom">
+            <div class="form-col">
+              <label class="form-label" for="g-cat">Category</label>
+              <select class="form-select" id="g-cat">
+                <option>Career</option><option>Health</option><option>Finance</option>
+                <option>Learning</option><option>Personal</option><option>Relationships</option><option>Other</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="g-status">Status</label>
+              <select class="form-select" id="g-status">
+                <option>Not Started</option><option>In Progress</option>
+                <option>Completed</option><option>Paused</option>
+              </select>
+            </div>
+            <button class="btn-add" onclick="App.Goals.add()">+ Add Goal</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="entries-list" id="goals-list"></div>
+    </section>
+
+    <!-- ── OVERVIEW TAB ── -->
+    <section class="tab-panel hidden" id="tab-overview" role="tabpanel">
+      <div class="panel-header">
+        <div>
+          <h1 class="panel-title">Overview</h1>
+          <p class="panel-sub" id="overview-greeting"></p>
+        </div>
+      </div>
+      <div id="overview-content"></div>
+    </section>
+
+  </main><!-- /main-content -->
+
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <button class="mob-tab active" data-tab="routine" onclick="App.UI.switchTab('routine')">
+      <span class="mob-icon">📋</span><span class="mob-label">Routine</span>
+    </button>
+    <button class="mob-tab" data-tab="ideas" onclick="App.UI.switchTab('ideas')">
+      <span class="mob-icon">💡</span><span class="mob-label">Ideas</span>
+    </button>
+    <button class="mob-tab" data-tab="goals" onclick="App.UI.switchTab('goals')">
+      <span class="mob-icon">🎯</span><span class="mob-label">Goals</span>
+    </button>
+    <button class="mob-tab" data-tab="overview" onclick="App.UI.switchTab('overview')">
+      <span class="mob-icon">✦</span><span class="mob-label">Overview</span>
+    </button>
+  </nav>
+</div><!-- /app -->
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="App.UI.closeModal()">
+  <div class="modal" id="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title">Edit</h3>
+      <button class="modal-close" onclick="App.UI.closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="App.UI.closeModal()">Cancel</button>
+      <button class="btn-primary" id="modal-save" onclick="App.UI.saveModal()"><span>Save Changes</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
